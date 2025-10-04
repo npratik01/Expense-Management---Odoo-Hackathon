@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { Upload, Calendar, DollarSign } from "lucide-react";
+import { Upload, Calendar, DollarSign, FileText, X } from "lucide-react";
 import axios from "axios";
 
 export default function ExpenseForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
   const navigate = useNavigate();
 
   const {
@@ -15,7 +16,24 @@ export default function ExpenseForm() {
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm();
+
+  const receiptFiles = watch("receipt");
+
+  // Handle file selection
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  // Remove selected file
+  const removeFile = () => {
+    setSelectedFile(null);
+    reset({ ...watch(), receipt: null });
+  };
 
   const onSubmit = async (data) => {
     setLoading(true);
@@ -260,32 +278,61 @@ export default function ExpenseForm() {
 
                   <div className="col-span-6">
                     <label className="block text-sm font-medium text-gray-700">
-                      Receipt
+                      Receipt (Optional)
                     </label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                      <div className="space-y-1 text-center">
-                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="flex text-sm text-gray-600">
-                          <label
-                            htmlFor="receipt"
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                          >
-                            <span>Upload a file</span>
-                            <input
-                              id="receipt"
-                              type="file"
-                              accept="image/*,.pdf"
-                              {...register("receipt")}
-                              className="sr-only"
-                            />
-                          </label>
-                          <p className="pl-1">or drag and drop</p>
+                    {!selectedFile && !receiptFiles?.[0] ? (
+                      <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors">
+                        <div className="space-y-1 text-center">
+                          <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                          <div className="flex text-sm text-gray-600">
+                            <label
+                              htmlFor="receipt"
+                              className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                            >
+                              <span>Upload a file</span>
+                              <input
+                                id="receipt"
+                                type="file"
+                                accept="image/*,.pdf"
+                                {...register("receipt")}
+                                onChange={handleFileSelect}
+                                className="sr-only"
+                              />
+                            </label>
+                            <p className="pl-1">or drag and drop</p>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            PNG, JPG, PDF up to 10MB
+                          </p>
                         </div>
-                        <p className="text-xs text-gray-500">
-                          PNG, JPG, PDF up to 10MB
-                        </p>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="mt-1 p-4 border-2 border-green-300 border-dashed rounded-md bg-green-50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <FileText className="h-8 w-8 text-green-600" />
+                            <div className="ml-3">
+                              <p className="text-sm font-medium text-green-800">
+                                {selectedFile?.name || receiptFiles?.[0]?.name || "File selected"}
+                              </p>
+                              <p className="text-xs text-green-600">
+                                {selectedFile?.size 
+                                  ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
+                                  : "Ready to upload"
+                                }
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={removeFile}
+                            className="ml-3 inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-green-600 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

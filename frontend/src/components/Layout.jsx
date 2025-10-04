@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { Home, Receipt, Users, Settings, LogOut, Menu, X, Shield, Workflow } from "lucide-react";
+import { Home, Receipt, Users, Settings, LogOut, Menu, X, Shield, Workflow, History } from "lucide-react";
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -11,6 +11,7 @@ export default function Layout({ children }) {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "New Expense", href: "/expenses/new", icon: Receipt },
+    { name: "Expense History", href: "/expenses/history", icon: History },
     ...(user?.role === "admin"
       ? [
           { name: "Users", href: "/users", icon: Users },
