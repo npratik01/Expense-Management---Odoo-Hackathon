@@ -1,7 +1,11 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
+import dotenv from "dotenv";
 import User from "./models/User.js";
 import Company from "./models/Company.js";
+
+// Load environment variables
+dotenv.config();
 
 const DEFAULT_USERS = [
   {
@@ -63,35 +67,34 @@ const DEFAULT_USERS = [
 
 async function seedDatabase() {
   try {
-    // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/expense-app");
-    console.log("Connected to MongoDB");
+    // Connect to MongoDB using the same URI as the server
+    console.log("🔗 Connecting to MongoDB...");
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("✅ Connected to MongoDB Atlas");
 
     // Clear existing data
     await User.deleteMany({});
     await Company.deleteMany({});
-    console.log("Cleared existing data");
+    console.log("🗑️ Cleared existing data");
 
     // Create default company
     const company = new Company({
       name: "Default Company",
       address: "123 Business Street, City, State 12345",
       phone: "+1-234-567-8900",
-      email: "info@company.com"
+      email: "info@company.com",
+      country: "United States",
+      currency: "USD"
     });
     await company.save();
-    console.log("Created default company");
+    console.log("🏢 Created default company");
 
     // Create users with proper password hashing
     const users = [];
     for (const userData of DEFAULT_USERS) {
-      const salt = await bcrypt.genSalt(10);
-      const passwordHash = await bcrypt.hash(userData.password, salt);
-      
       const user = new User({
         name: userData.name,
         email: userData.email,
-        passwordHash,
         role: userData.role,
         company: company._id,
         department: userData.department,
@@ -101,9 +104,11 @@ async function seedDatabase() {
         managersInSequence: userData.managersInSequence
       });
       
+      // Use the User model's setPassword method
+      await user.setPassword(userData.password);
       await user.save();
       users.push(user);
-      console.log(`Created user: ${userData.name} (${userData.role})`);
+      console.log(`👤 Created user: ${userData.name} (${userData.role}) - ${userData.email}`);
     }
 
     // Set up manager relationships
@@ -139,8 +144,13 @@ async function seedDatabase() {
 }
 
 // Run seeder if called directly
-if (process.argv[1] === import.meta.url.replace('file://', '')) {
-  seedDatabase();
-}
+console.log("🚀 Starting seeder...");
+seedDatabase().then(() => {
+  console.log("✅ Seeder completed successfully");
+  process.exit(0);
+}).catch((error) => {
+  console.error("❌ Seeder failed:", error);
+  process.exit(1);
+});
 
 export default seedDatabase;

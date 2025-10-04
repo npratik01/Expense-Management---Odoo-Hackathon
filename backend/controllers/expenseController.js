@@ -167,10 +167,64 @@ export async function submitExpense(req, res) {
 
 export async function myExpenses(req, res) {
   try {
-    const expenses = await Expense.find({ employee: req.user._id })
+    const { status, category, dateRange, search } = req.query;
+    const filter = { employee: req.user._id };
+
+    // Status filter
+    if (status && status !== "all") {
+      filter.status = status;
+    }
+
+    // Category filter
+    if (category && category !== "all") {
+      filter.category = category;
+    }
+
+    // Date range filter
+    if (dateRange && dateRange !== "all") {
+      const now = new Date();
+      let startDate;
+
+      switch (dateRange) {
+        case "thisMonth":
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+        case "lastMonth":
+          startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          filter.date = {
+            $gte: startDate,
+            $lt: new Date(now.getFullYear(), now.getMonth(), 1)
+          };
+          break;
+        case "thisQuarter":
+          const quarterStart = Math.floor(now.getMonth() / 3) * 3;
+          startDate = new Date(now.getFullYear(), quarterStart, 1);
+          break;
+        case "thisYear":
+          startDate = new Date(now.getFullYear(), 0, 1);
+          break;
+      }
+
+      if (dateRange !== "lastMonth" && startDate) {
+        filter.date = { $gte: startDate };
+      }
+    }
+
+    let query = Expense.find(filter)
       .populate("approvalSteps.approver", "name email role")
       .sort("-createdAt");
 
+    // Search filter
+    if (search) {
+      query = query.find({
+        $or: [
+          { description: { $regex: search, $options: "i" } },
+          { category: { $regex: search, $options: "i" } }
+        ]
+      });
+    }
+
+    const expenses = await query.exec();
     res.json(expenses);
   } catch (error) {
     console.error("Get my expenses error:", error);

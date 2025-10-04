@@ -14,6 +14,7 @@ import ApprovalRules from "./components/ApprovalRules";
 import UserManagementPanel from "./components/UserManagementPanel";
 import RolePermissionPanel from "./components/RolePermissionPanel";
 import ApprovalWorkflowPanel from "./components/ApprovalWorkflowPanel";
+import ExpenseHistory from "./components/ExpenseHistory";
 import Layout from "./components/Layout";
 import "./App.css";
 
@@ -44,6 +45,7 @@ function App() {
                     <Routes>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/expenses/new" element={<ExpenseForm />} />
+                      <Route path="/expenses/history" element={<ExpenseHistory />} />
                       <Route
                         path="/users"
                         element={
