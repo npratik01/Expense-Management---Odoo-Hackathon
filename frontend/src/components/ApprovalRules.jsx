@@ -373,8 +373,9 @@ export default function ApprovalRules() {
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-blue-600 truncate">
-                        {rule.ruleType.charAt(0).toUpperCase() +
-                          rule.ruleType.slice(1)}{" "}
+                        {rule.ruleType ? 
+                          rule.ruleType.charAt(0).toUpperCase() + rule.ruleType.slice(1) :
+                          "Unknown"}{" "}
                         Rule
                       </p>
                       <div className="ml-2 flex-shrink-0 flex">
@@ -392,13 +393,13 @@ export default function ApprovalRules() {
                     <div className="mt-2">
                       <p className="text-sm text-gray-600">
                         {rule.ruleType === "percentage" &&
-                          `${rule.percentageThreshold}% approval required`}
+                          `${rule.percentageThreshold || 0}% approval required`}
                         {rule.ruleType === "specific" &&
                           `Specific approvers: ${
                             rule.specificApprovers?.length || 0
                           }`}
                         {rule.ruleType === "hybrid" &&
-                          `${rule.percentageThreshold}% OR specific approver`}
+                          `${rule.percentageThreshold || 0}% OR specific approver`}
                       </p>
                       {rule.conditions?.minAmount && (
                         <p className="text-sm text-gray-500">

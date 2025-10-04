@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { Home, Receipt, Users, Settings, LogOut, Menu, X } from "lucide-react";
+import { Home, Receipt, Users, Settings, LogOut, Menu, X, Shield, Workflow } from "lucide-react";
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,6 +15,9 @@ export default function Layout({ children }) {
       ? [
           { name: "Users", href: "/users", icon: Users },
           { name: "Approval Rules", href: "/approval-rules", icon: Settings },
+          { name: "User Management", href: "/admin/user-management", icon: Users },
+          { name: "Role & Permissions", href: "/admin/role-permissions", icon: Shield },
+          { name: "Approval Workflows", href: "/admin/approval-workflows", icon: Workflow },
         ]
       : []),
   ];

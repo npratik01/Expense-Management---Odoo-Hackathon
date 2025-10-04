@@ -11,6 +11,9 @@ import Dashboard from "./components/Dashboard";
 import ExpenseForm from "./components/ExpenseForm";
 import UserManagement from "./components/UserManagement";
 import ApprovalRules from "./components/ApprovalRules";
+import UserManagementPanel from "./components/UserManagementPanel";
+import RolePermissionPanel from "./components/RolePermissionPanel";
+import ApprovalWorkflowPanel from "./components/ApprovalWorkflowPanel";
 import Layout from "./components/Layout";
 import "./App.css";
 
@@ -27,7 +30,7 @@ function AdminRoute({ children }) {
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <div className="w-full min-h-screen bg-gray-50">
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -54,6 +57,30 @@ function App() {
                         element={
                           <AdminRoute>
                             <ApprovalRules />
+                          </AdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/user-management"
+                        element={
+                          <AdminRoute>
+                            <UserManagementPanel />
+                          </AdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/role-permissions"
+                        element={
+                          <AdminRoute>
+                            <RolePermissionPanel />
+                          </AdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/approval-workflows"
+                        element={
+                          <AdminRoute>
+                            <ApprovalWorkflowPanel />
                           </AdminRoute>
                         }
                       />

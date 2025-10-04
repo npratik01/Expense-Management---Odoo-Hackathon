@@ -49,6 +49,10 @@ export async function createUser(req, res) {
       company: req.user.company._id,
       manager: managerId || null,
       department,
+      isBillApprover: req.body.isBillApprover || false,
+      approvalLevel: req.body.approvalLevel || 0,
+      approvalLimit: req.body.approvalLimit || 0,
+      managersInSequence: req.body.managersInSequence || []
     });
 
     await user.setPassword(password || "ChangeMe123!");
@@ -144,6 +148,10 @@ export async function updateUser(req, res) {
     if (email) user.email = email;
     if (role) user.role = role;
     if (department !== undefined) user.department = department;
+    if (req.body.isBillApprover !== undefined) user.isBillApprover = req.body.isBillApprover;
+    if (req.body.approvalLevel !== undefined) user.approvalLevel = req.body.approvalLevel;
+    if (req.body.approvalLimit !== undefined) user.approvalLimit = req.body.approvalLimit;
+    if (req.body.managersInSequence !== undefined) user.managersInSequence = req.body.managersInSequence;
 
     // Handle manager assignment
     if (managerId === null || managerId === "") {
@@ -260,5 +268,132 @@ export async function getManagers(req, res) {
   } catch (error) {
     console.error("Get managers error:", error);
     res.status(500).json({ error: "Failed to fetch managers" });
+  }
+}
+
+// Get role statistics
+export async function getRoleStatistics(req, res) {
+  try {
+    const pipeline = [
+      { $match: { company: req.user.company._id } },
+      { $group: { _id: "$role", count: { $sum: 1 } } },
+      { $project: { role: "$_id", count: 1, _id: 0 } }
+    ];
+    
+    const stats = await User.aggregate(pipeline);
+    
+    // Ensure all roles are represented
+    const roleStats = {
+      admin: 0,
+      manager: 0,
+      employee: 0
+    };
+    
+    stats.forEach(stat => {
+      roleStats[stat.role] = stat.count;
+    });
+    
+    res.json(roleStats);
+  } catch (error) {
+    console.error("Get role statistics error:", error);
+    res.status(500).json({ error: "Failed to fetch role statistics" });
+  }
+}
+
+// Get approval workflow statistics
+export async function getApprovalStats(req, res) {
+  try {
+    const billApprovers = await User.countDocuments({
+      company: req.user.company._id,
+      isBillApprover: true
+    });
+    
+    const usersWithApprovalLevels = await User.find({
+      company: req.user.company._id,
+      approvalLevel: { $gt: 0 }
+    }).select("name approvalLevel approvalLimit isBillApprover");
+    
+    const sequentialApprovals = await User.countDocuments({
+      company: req.user.company._id,
+      "managersInSequence.0": { $exists: true }
+    });
+    
+    res.json({
+      billApprovers,
+      usersWithApprovalLevels,
+      sequentialApprovals
+    });
+  } catch (error) {
+    console.error("Get approval stats error:", error);
+    res.status(500).json({ error: "Failed to fetch approval statistics" });
+  }
+}
+
+// Bulk update user roles
+export async function bulkUpdateRoles(req, res) {
+  try {
+    if (req.user.role !== ROLES.ADMIN) {
+      return res.status(403).json({ error: "Only admins can bulk update roles" });
+    }
+    
+    const { userUpdates } = req.body; // Array of { userId, role }
+    
+    const bulkOps = userUpdates.map(update => ({
+      updateOne: {
+        filter: { 
+          _id: update.userId, 
+          company: req.user.company._id,
+          _id: { $ne: req.user._id } // Prevent self-update
+        },
+        update: { role: update.role }
+      }
+    }));
+    
+    const result = await User.bulkWrite(bulkOps);
+    
+    res.json({
+      message: "Roles updated successfully",
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error("Bulk update roles error:", error);
+    res.status(500).json({ error: "Failed to update roles" });
+  }
+}
+
+// Get user hierarchy
+export async function getUserHierarchy(req, res) {
+  try {
+    const users = await User.find({ company: req.user.company._id })
+      .populate("manager", "name email role")
+      .select("name email role manager isBillApprover approvalLevel")
+      .sort("name");
+    
+    // Build hierarchy tree
+    const userMap = new Map();
+    const hierarchy = [];
+    
+    users.forEach(user => {
+      userMap.set(user._id.toString(), { 
+        ...user.toObject(), 
+        children: [] 
+      });
+    });
+    
+    users.forEach(user => {
+      if (user.manager) {
+        const parent = userMap.get(user.manager._id.toString());
+        if (parent) {
+          parent.children.push(userMap.get(user._id.toString()));
+        }
+      } else {
+        hierarchy.push(userMap.get(user._id.toString()));
+      }
+    });
+    
+    res.json(hierarchy);
+  } catch (error) {
+    console.error("Get user hierarchy error:", error);
+    res.status(500).json({ error: "Failed to fetch user hierarchy" });
   }
 }
